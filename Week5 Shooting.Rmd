@@ -1,0 +1,194 @@
+---
+title: "Week 5 Shooting"
+author: "SL"
+date: "2024-03-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction & Description of Data
+
+In this report, we will be analyzing the NYPD Shooting Incident data sourced from the NYC OpenData website: https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic. The data shows the breakdown of every shooting incident that occurred in NYC from 2006 - 2022. Every record represents a shooting incident and includes information about the event, such as  details regarding the perpetrator, details regarding the victim, and the location of the incident. The data was last updated on September 2023. 
+
+For this analysis, we will be looking to see if the perpetrators' demographics can be used to predict if the shooting is fatal. 
+ 
+# Step 1 
+
+### Import Libraries
+
+```{r libs, echo=TRUE}
+library(tidyverse)
+library(aod)
+library(ggplot2)
+
+```
+
+
+### Upload data and show summary
+```{r data, echo=TRUE}
+df = read_csv('https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD')
+summary(df, show_col_types = FALSE)
+
+```
+
+# Step 2
+
+### Tidy & Transform 
+
+To tidy and transform the data, I will do a few things:
+
+- Turn appropriate variables to factors
+- Subset data
+- Create a new binary variable for the statistical murder flag. 
+- Format applicable variables to dates.
+- Replace null and U categories to unknown in variables
+- Deal with NAs in in variables. I replaced the missing data  with 'unknown.' Given the type of column, this data may be missing because certain details were not collected. In other words, relabeling the NA to 'unknown' may be more appropriate. A few of the other columns already use this 'unknown' label for uncollected data. 
+
+```{r clean, echo=TRUE}
+
+df <- df %>%
+    replace_na(list(PERP_SEX = 'UNKNOWN', PERP_AGE_GROUP = 'UNKNOWN', PERP_RACE = 'UNKNOWN'))
+
+cols = c('STATISTICAL_MURDER_FLAG', 'PERP_AGE_GROUP', 'PERP_SEX', 'PERP_RACE', 'OCCUR_DATE')
+shooting_df = df[cols]
+
+shooting_df= shooting_df %>%
+  mutate(OCCUR_DATE = mdy(OCCUR_DATE)) %>%
+  mutate_at(cols, factor) %>%
+  mutate(murder_binary=case_when(
+    STATISTICAL_MURDER_FLAG==TRUE ~ 1,
+    STATISTICAL_MURDER_FLAG==FALSE ~ 0
+  ))
+
+
+#Transform PERP_SEX
+levels(shooting_df$PERP_SEX)[levels(shooting_df$PERP_SEX)=="(null)"] <- "UNKNOWN"
+levels(shooting_df$PERP_SEX)[levels(shooting_df$PERP_SEX)=="U"] <- "UNKNOWN"
+
+#Transform PERP_AGE_GROUP
+levels(shooting_df$PERP_AGE_GROUP)[levels(shooting_df$PERP_AGE_GROUP)=="(null)"] <- "UNKNOWN"
+levels(shooting_df$PERP_AGE_GROUP)[levels(shooting_df$PERP_AGE_GROUP)=="1020"] <- "UNKNOWN"
+levels(shooting_df$PERP_AGE_GROUP)[levels(shooting_df$PERP_AGE_GROUP)=="224"] <- "UNKNOWN"
+levels(shooting_df$PERP_AGE_GROUP)[levels(shooting_df$PERP_AGE_GROUP)=="940"] <- "UNKNOWN"
+
+#Transform PERP_RACE
+levels(shooting_df$PERP_RACE)[levels(shooting_df$PERP_RACE)=="(null)"] <- "UNKNOWN"
+
+
+table(shooting_df$PERP_AGE_GROUP) 
+table(shooting_df$PERP_SEX)
+table(shooting_df$PERP_RACE)
+table(shooting_df$STATISTICAL_MURDER_FLAG)
+
+summary(shooting_df)
+```
+
+
+
+
+
+# Step 3 Add Visuals and Analysis
+
+### Visuals 
+
+The plots below show different views of looking at the demographic variables (age, sex, race of perpetrator) and the statistical murder flag variable. I believe it’s important to look at both the overall counts of each group and the proportions. For example, the Murders by Gender plot shows that a majority of murders are done by males, from a count perspective. However, the Proportion of Murders by Gender plot shows that of crimes committed by each gender, females have a slightly higher proportion of murders. 
+
+```{r shootings by year, echo=TRUE}
+
+shooting_df %>% ggplot() +
+  geom_bar(aes(PERP_AGE_GROUP, fill = STATISTICAL_MURDER_FLAG), color = 'blue',position=position_dodge())+
+  labs(title = str_c('Murders by Age Group'), y = NULL)
+
+shooting_df %>%
+  count(STATISTICAL_MURDER_FLAG, PERP_AGE_GROUP) %>% 
+  group_by(PERP_AGE_GROUP) %>% 
+   mutate(Sum=sum(n)) %>% 
+   mutate(proportion = n/Sum) %>% 
+  ggplot(aes(y=proportion, x=PERP_AGE_GROUP, fill=STATISTICAL_MURDER_FLAG)) +
+   geom_col(position = "dodge")+
+  theme(text = element_text(size = 10), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = str_c('Proportion of Murders by Age'), y = NULL)
+
+
+shooting_df %>% ggplot() +
+  geom_bar(aes(PERP_SEX, fill = STATISTICAL_MURDER_FLAG), color = 'blue',position=position_dodge())+
+  labs(title = str_c('Murders by Gender'), y = NULL)
+
+shooting_df %>%
+  count(STATISTICAL_MURDER_FLAG, PERP_SEX) %>% 
+  group_by(PERP_SEX) %>% 
+   mutate(Sum=sum(n)) %>% 
+   mutate(proportion = n/Sum) %>% 
+  ggplot(aes(y=proportion, x=PERP_SEX,fill=STATISTICAL_MURDER_FLAG)) +
+   geom_col(position = "dodge")+
+  theme(text = element_text(size = 10), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = str_c('Proportion of Murders by Gender'), y = NULL)
+
+
+shooting_df %>% ggplot() +
+  geom_bar(aes(PERP_RACE, fill = STATISTICAL_MURDER_FLAG), color = 'blue',position=position_dodge())+
+  labs(title = str_c('Murders by Race'), y = NULL)+
+  theme(text = element_text(size = 7), axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+shooting_df %>%
+  count(STATISTICAL_MURDER_FLAG, PERP_RACE) %>% 
+  group_by(PERP_RACE) %>% 
+   mutate(Sum=sum(n)) %>% 
+   mutate(proportion = n/Sum) %>% 
+  ggplot(aes(y=proportion, x=PERP_RACE,fill=STATISTICAL_MURDER_FLAG)) +
+   geom_col(position = "dodge")+
+  theme(text = element_text(size = 7), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = str_c('Proportion of Murders by Race'), y = NULL)
+
+
+```
+
+## Regression
+```{r regs by gender, echo=TRUE}
+options(scipen=999)
+## Give summary of log odds explanation of those who commit murder, tend ot be older
+
+mod = glm(murder_binary ~ PERP_SEX + PERP_AGE_GROUP + PERP_RACE , data = shooting_df, family = 'binomial')
+summary(mod)
+
+exp(coef(mod))
+exp(cbind(coef(mod), confint(mod))) 
+
+#https://github.com/kristin-kernler/DTSA-5301-Final-Project-1-NYPD-Shooting-Incidents/blob/main/NYPD_Shooting_Report.pdf
+
+
+
+```
+
+
+Thoughts based on regression results:
+
+- Based on the regression results, many of the demographic variable are statistically significant predictors of fatality. Also a few of the categories have such small sample sizes that the regression had trouble modelling them.
+- To begin digging into practical significance and for interpretability, I calculated the odds ratio of each variable and the 95% CI for each odds ratio. 
+- Based on the odds ratio and the CIs, although gender is statistically significant, it does not seem to be a strong predictor of fatality. Age seems to be the strongest predictor, and shows that the older the perpetrator is, the more likely the shooting is fatal--Where the odds of a shooting being fatal is almost 26 times higher if the perpetrator is 65+ vs not, if all other variables are constant, given an odds ratio of 25.8. When looking at race, shootings with White perpetrator are more likely to be fatal---Where the odds of a shooting being fatal is almost 3 times higher if the perpetrator is white vs not, if all other variables are constant, given an odds ratio of 2.96.
+
+Questions raised by this analysis:
+- I wonder if older perpetrators were more likely to target older victims, thus lowering the likelihood of the victim surviving. 
+- I wonder if the motivations behind the shootings vary by demographics. For example, maybe younger, black, male perpetrators use shootings as an intimidation technique but do not purposely try to kill their victims, thus lowering the likelihood of those shootings being fatal. 
+
+
+
+# Conclusion
+
+In this report, I endeavored to understand if the perpetrators’ demographics can be used to predict if the shooting is fatal. When looking at the overall counts in the data, shootings, including fatal shootings, seem to be associated with younger, male, and black perpetrators. This interpretation of the count data is disregarding the shootings where demographics are unknown. However, after looking at the proportion of fatal shooting per demographic, it seems like  fatal shootings seem to be associated with older and white perpetrators. The logistic regression I conducted also supports this interpretation. Based on the regression results, a shooting is more likely be fatal if the perpetrator is older and White. That being said, there is a large amount of shootings where demographics were not collected. 
+
+In terms of personal biases, as a young, Hispanic, female, I could be more sympathetic towards perpetrators in my age range, which is the 25-44 age range. Also, I can be more forgiving toward perpetrators who are classified as white Hispanic  
+
+# Session Info
+
+```{r session, echo= TRUE, eval=TRUE}
+sessionInfo()
+```
+
+
+```{r e, echo = FALSE, eval=FALSE}
+#TROUBLESHOOT
+```
