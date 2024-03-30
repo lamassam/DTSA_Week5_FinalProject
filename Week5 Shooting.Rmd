@@ -2,7 +2,7 @@
 title: "Week 5 Shooting"
 author: "SL"
 date: "2024-03-17"
-output: output: rmarkdown::github_document
+output: rmarkdown::github_document
 ---
 
 ```{r setup, include=FALSE}
