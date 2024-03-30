@@ -171,6 +171,7 @@ Thoughts based on regression results:
 - Based on the odds ratio and the CIs, although gender is statistically significant, it does not seem to be a strong predictor of fatality. Age seems to be the strongest predictor, and shows that the older the perpetrator is, the more likely the shooting is fatal--Where the odds of a shooting being fatal is almost 26 times higher if the perpetrator is 65+ vs not, if all other variables are constant, given an odds ratio of 25.8. When looking at race, shootings with White perpetrator are more likely to be fatal---Where the odds of a shooting being fatal is almost 3 times higher if the perpetrator is white vs not, if all other variables are constant, given an odds ratio of 2.96.
 
 Questions raised by this analysis:
+
 - I wonder if older perpetrators were more likely to target older victims, thus lowering the likelihood of the victim surviving. 
 - I wonder if the motivations behind the shootings vary by demographics. For example, maybe younger, black, male perpetrators use shootings as an intimidation technique but do not purposely try to kill their victims, thus lowering the likelihood of those shootings being fatal. 
 
