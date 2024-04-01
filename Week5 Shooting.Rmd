@@ -157,8 +157,6 @@ summary(mod)
 exp(coef(mod))
 exp(cbind(coef(mod), confint(mod))) 
 
-#https://github.com/kristin-kernler/DTSA-5301-Final-Project-1-NYPD-Shooting-Incidents/blob/main/NYPD_Shooting_Report.pdf
-
 
 
 ```
